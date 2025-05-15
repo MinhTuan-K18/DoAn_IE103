@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -19,15 +18,19 @@ const Page = () => {
   const [popUpOpen, setPopUpOpen] = useState(false);
   const [deleteOne, setDeleteOne] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const router = useRouter();
 
-  const fetchBook = async () => {
+  const fetchBook = async (pageNum = 0) => {
     setLoading(true);
     try {
       const res = await axios.get("http://localhost:8080/api/books", {
-        params: { page: 0, size: 12 },
+        params: { page: pageNum, size: 12 },
       });
-      setBookList(res.data.content);
+      setBookList(res.data.content || []);
+      setTotalPages(res.data.totalPages || 1);
+      setPage(pageNum);
     } catch (error) {
       toast.error("Lỗi khi lấy dữ liệu sách");
       console.error(error);
@@ -57,8 +60,12 @@ const Page = () => {
       } else if (mode === "ngonNgu") params.ngonNgu = searchQuery;
       else if (mode === "tinhTrang") params.tinhTrang = searchQuery;
 
+      if (statusFilter !== "all") params.tinhTrang = statusFilter;
+
       const { data } = await axios.get("http://localhost:8080/api/books/search", { params });
-      setBookList(data.content);
+      setBookList(data.content || []);
+      setTotalPages(data.totalPages || 1);
+      setPage(0);
       if (data.content.length === 0) toast.error("Không tìm thấy kết quả");
     } catch (err) {
       console.error("Lỗi khi tìm kiếm:", err);
@@ -71,9 +78,9 @@ const Page = () => {
   const handleDelete = async (book) => {
     setLoading(true);
     try {
-      const response = await axios.delete(`http://localhost:8080/api/books/${book.maSach}`);
+      await axios.delete(`http://localhost:8080/api/books/${book.maSach}`);
       toast.success("Xóa sách thành công");
-      await fetchBook();
+      await fetchBook(page);
     } catch (error) {
       console.error("Lỗi khi xóa:", error.response || error);
       if (error.response?.status === 400) {
@@ -88,6 +95,12 @@ const Page = () => {
     }
   };
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      fetchBook(newPage);
+    }
+  };
+
   const BookCard = ({ book }) => {
     const getTinhTrangText = (tinhTrang) => {
       switch (tinhTrang) {
@@ -98,7 +111,7 @@ const Page = () => {
         case "Đầy đủ sách":
           return { text: "Đầy đủ sách", color: "text-green-600" };
         default:
-          return { text: tinhTrang, color: "text-gray-500" };
+          return { text: tinhTrang || "Không xác định", color: "text-gray-500" };
       }
     };
 
@@ -113,13 +126,14 @@ const Page = () => {
               : "/placeholder.png"
           }
           className="w-[145px] h-[205px] object-cover"
+          onError={(e) => (e.target.src = "/placeholder.png")}
         />
         <div className="flex flex-col gap-2 w-full">
-          <p className="font-bold">{book.tenSach}</p>
-          <p className="italic">{book.tenTacGias?.join(", ")}</p>
-          <p>Ngôn ngữ: {book.ngonNgu}</p>
-          <p>Tái bản: {book.taiBan}</p>
-          <p>Số lượng: {book.soLuong}</p>
+          <p className="font-bold">{book.tenSach || "Không có tiêu đề"}</p>
+          <p className="italic">{book.tenTacGias?.join(", ") || "Không có tác giả"}</p>
+          <p>Ngôn ngữ: {book.ngonNgu || "Không xác định"}</p>
+          <p>Tái bản: {book.taiBan || "Không xác định"}</p>
+          <p>Số lượng: {book.soLuong ?? 0}</p>
           <p className="font-semibold">
             Trạng thái: <span className={tinhTrangInfo.color}>{tinhTrangInfo.text}</span>
           </p>
@@ -227,7 +241,30 @@ const Page = () => {
           </div>
 
           {Array.isArray(bookList) && bookList.length > 0 ? (
-            bookList.map((book) => <BookCard key={book.maSach} book={book} />)
+            <>
+              {bookList.map((book) => (
+                <BookCard key={book.maSach} book={book} />
+              ))}
+              <div className="flex gap-4 mt-4">
+                <Button
+                  disabled={page === 0}
+                  onClick={() => handlePageChange(page - 1)}
+                  className="bg-[#062D76] hover:bg-gray-700"
+                >
+                  Trang trước
+                </Button>
+                <span className="self-center">
+                  Trang {page + 1} / {totalPages}
+                </span>
+                <Button
+                  disabled={page >= totalPages - 1}
+                  onClick={() => handlePageChange(page + 1)}
+                  className="bg-[#062D76] hover:bg-gray-700"
+                >
+                  Trang sau
+                </Button>
+              </div>
+            </>
           ) : (
             <p>Không có sách nào để hiển thị.</p>
           )}
@@ -249,12 +286,13 @@ const Page = () => {
                     : "/placeholder.png"
                 }
                 className="w-[145px] h-[205px] object-cover"
+                onError={(e) => (e.target.src = "/placeholder.png")}
               />
               <div className="flex flex-col gap-2">
                 <p>Mã sách: {deleteOne.maSach}</p>
                 <p className="font-bold">{deleteOne.tenSach}</p>
-                <p className="italic">{deleteOne.tenTacGias?.join(", ")}</p>
-                <p>Số lượng: {deleteOne.soLuong}</p>
+                <p className="italic">{deleteOne.tenTacGias?.join(", ") || "Không có tác giả"}</p>
+                <p>Số lượng: {deleteOne.soLuong ?? 0}</p>
               </div>
             </div>
             <div className="flex justify-end mt-4 gap-4">

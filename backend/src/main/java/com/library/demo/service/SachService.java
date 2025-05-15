@@ -1,227 +1,84 @@
 package com.library.demo.service;
 
-import com.library.demo.DTO.SachDTO;
-import com.library.demo.model.*;
-import com.library.demo.repository.*;
-import jakarta.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.library.demo.DTO.SachDTO; // Import class VietnameseNormalizer
+import com.library.demo.model.IMGS;
+import com.library.demo.model.Sach;
+import com.library.demo.model.TacGia;
+import com.library.demo.model.TheLoai;
+import com.library.demo.repository.ImgRepository;
+import com.library.demo.repository.SachRepository;
+import com.library.demo.utils.VietnameseNormalizer;
 
 @Service
 public class SachService {
+
+    
+
+    @Autowired
+    private GoogleBooksService googleBooksService;
+
     @Autowired
     private SachRepository sachRepository;
+
     @Autowired
-    private NXBRepository nxbRepository;
-    @Autowired
-    private TheLoaiRepository theLoaiRepository;
-    @Autowired
-    private TacGiaRepository tacGiaRepository;
-    @Autowired
-    private IMGSRepository imgsRepository;
+    private ImgRepository imgRepository;
 
-    @Transactional
-    public void themSach(SachDTO sachDTO) {
-        // Validate DTO
-        validateSachDTO(sachDTO);
-
-        // Resolve or create NXB
-        NXB nxb = nxbRepository.timKiemNXB(sachDTO.getTenNXB()).stream()
-            .findFirst()
-            .orElseGet(() -> {
-                nxbRepository.themNXB(sachDTO.getTenNXB());
-                return nxbRepository.timKiemNXB(sachDTO.getTenNXB()).stream()
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Không thể tạo nhà xuất bản"));
-            });
-
-        // Call stored procedure to add book
-        sachRepository.themSach(
-            sachDTO.getTenSach(),
-            sachDTO.getGia(),
-            nxb.getMaNXB(),
-            sachDTO.getNamXB(),
-            sachDTO.getTaiBan(),
-            sachDTO.getNgonNgu(),
-            sachDTO.getSoLuong(),
-            sachDTO.getChuThich(),
-            sachDTO.getTinhTrang()
-        );
-
-        // Get the newly added book
-        Sach sach = sachRepository.timKiemSach(sachDTO.getTenSach(), nxb.getMaNXB(), sachDTO.getNamXB(), sachDTO.getNgonNgu(), sachDTO.getTinhTrang())
-            .stream()
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy sách vừa thêm"));
-
-        // Handle TheLoai
-        List<TheLoai> theLoais = sachDTO.getTenTheLoais().stream()
-            .map(tenTL -> theLoaiRepository.timKiemTheLoai(tenTL).stream()
-                .findFirst()
-                .orElseGet(() -> {
-                    theLoaiRepository.themTheLoai(tenTL);
-                    return theLoaiRepository.timKiemTheLoai(tenTL).stream()
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Không thể tạo thể loại"));
-                }))
-            .collect(Collectors.toList());
-        sach.setTheLoais(theLoais);
-
-        // Handle TacGia
-        List<TacGia> tacGias = sachDTO.getTenTacGias().stream()
-            .map(tenTG -> tacGiaRepository.timKiemTacGia(tenTG).stream()
-                .findFirst()
-                .orElseGet(() -> {
-                    tacGiaRepository.themTacGia(tenTG);
-                    return tacGiaRepository.timKiemTacGia(tenTG).stream()
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Không thể tạo tác giả"));
-                }))
-            .collect(Collectors.toList());
-        sach.setTacGias(tacGias);
-
-        // Handle IMGS
-        if (sachDTO.getHinhAnhs() != null && !sachDTO.getHinhAnhs().isEmpty()) {
-            List<IMGS> imgs = sachDTO.getHinhAnhs().stream()
-                .map(url -> {
-                    IMGS img = new IMGS();
-                    img.setImg(url);
-                    img.setSach(sach);
-                    return img;
-                })
-                .collect(Collectors.toList());
-            imgsRepository.saveAll(imgs);
-        }
-
-        sachRepository.save(sach);
+    public Page<SachDTO> searchBooks(String keyword, Pageable pageable) {
+        String normalizedKeyword = VietnameseNormalizer.removeVietnameseAccents(keyword);
+        Page<Sach> sachPage = sachRepository.searchBooks(normalizedKeyword, pageable);
+        return sachPage.map(this::convertToDTO);
     }
 
-    @Transactional
-    public void capNhatSach(Integer maSach, SachDTO sachDTO) {
-        // Validate DTO
-        validateSachDTO(sachDTO);
+    
 
-        // Check if book exists
-        Sach sach = sachRepository.findById(maSach)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy sách với mã: " + maSach));
-
-        // Resolve or create NXB
-        NXB nxb = nxbRepository.timKiemNXB(sachDTO.getTenNXB()).stream()
-            .findFirst()
-            .orElseGet(() -> {
-                nxbRepository.themNXB(sachDTO.getTenNXB());
-                return nxbRepository.timKiemNXB(sachDTO.getTenNXB()).stream()
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Không thể tạo nhà xuất bản"));
-            });
-
-        // Call stored procedure to update book
-        sachRepository.capNhatSach(
-            maSach,
-            sachDTO.getTenSach(),
-            sachDTO.getGia(),
-            nxb.getMaNXB(),
-            sachDTO.getNamXB(),
-            sachDTO.getTaiBan(),
-            sachDTO.getNgonNgu(),
-            sachDTO.getSoLuong(),
-            sachDTO.getChuThich(),
-            sachDTO.getTinhTrang()
-        );
-
-        // Update TheLoai
-        List<TheLoai> theLoais = sachDTO.getTenTheLoais().stream()
-            .map(tenTL -> theLoaiRepository.timKiemTheLoai(tenTL).stream()
-                .findFirst()
-                .orElseGet(() -> {
-                    theLoaiRepository.themTheLoai(tenTL);
-                    return theLoaiRepository.timKiemTheLoai(tenTL).stream()
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Không thể tạo thể loại"));
-                }))
-            .collect(Collectors.toList());
-        sach.setTheLoais(theLoais);
-
-        // Update TacGia
-        List<TacGia> tacGias = sachDTO.getTenTacGias().stream()
-            .map(tenTG -> tacGiaRepository.timKiemTacGia(tenTG).stream()
-                .findFirst()
-                .orElseGet(() -> {
-                    tacGiaRepository.themTacGia(tenTG);
-                    return tacGiaRepository.timKiemTacGia(tenTG).stream()
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Không thể tạo tác giả"));
-                }))
-            .collect(Collectors.toList());
-        sach.setTacGias(tacGias);
-
-        // Update IMGS
-        imgsRepository.deleteBySach_MaSach(maSach);
-        if (sachDTO.getHinhAnhs() != null && !sachDTO.getHinhAnhs().isEmpty()) {
-            List<IMGS> imgs = sachDTO.getHinhAnhs().stream()
-                .map(url -> {
-                    IMGS img = new IMGS();
-                    img.setImg(url);
-                    img.setSach(sach);
-                    return img;
-                })
-                .collect(Collectors.toList());
-            imgsRepository.saveAll(imgs);
-        }
-
-        sachRepository.save(sach);
+    public Page<SachDTO> getAllBooks(Pageable pageable) {
+        return sachRepository.findAll(pageable).map(this::convertToDTO);
     }
 
-    @Transactional
-    public void xoaSach(Integer maSach) {
-        if (!sachRepository.existsById(maSach)) {
-            throw new RuntimeException("Không tìm thấy sách với mã: " + maSach);
-        }
-        imgsRepository.deleteBySach_MaSach(maSach);
-        sachRepository.deleteById(maSach);
-    }
-
-    public List<SachDTO> timKiemSach(String tenSach, Integer maNXB, Integer namXB, String ngonNgu, String tinhTrang) {
-        List<Sach> sachList = sachRepository.timKiemSach(tenSach, maNXB, namXB, ngonNgu, tinhTrang);
-        return sachList.stream().map(this::toSachDTO).collect(Collectors.toList());
-    }
-
-    public Optional<SachDTO> getSachById(Integer maSach) {
-        return sachRepository.findById(maSach).map(this::toSachDTO);
-    }
-
-    private SachDTO toSachDTO(Sach sach) {
+    private SachDTO convertToDTO(Sach sach) {
         SachDTO dto = new SachDTO();
         dto.setMaSach(sach.getMaSach());
         dto.setTenSach(sach.getTenSach());
-        dto.setGia(sach.getGia());
-        dto.setNamXB(sach.getNamXB());
-        dto.setTaiBan(sach.getTaiBan());
-        dto.setNgonNgu(sach.getNgonNgu());
-        dto.setSoLuong(sach.getSoLuong());
-        dto.setChuThich(sach.getChuThich());
+        dto.setTenTacGias(sach.getTacGias().stream()
+                .map(TacGia::getTenTG)
+                .collect(Collectors.toList()));
+        dto.setTenTheLoais(sach.getTheLoais().stream()
+                .map(TheLoai::getTenTheLoai)
+                .collect(Collectors.toList()));
+        dto.setTenNXB(sach.getNxb().getTenNXB());
         dto.setTinhTrang(sach.getTinhTrang());
-        dto.setTenNXB(sach.getNxb() != null ? sach.getNxb().getTenNXB() : null);
-        dto.setTenTheLoais(sach.getTheLoais().stream().map(TheLoai::getTenTheLoai).collect(Collectors.toList()));
-        dto.setTenTacGias(sach.getTacGias().stream().map(TacGia::getTenTG).collect(Collectors.toList()));
-        dto.setHinhAnhs(imgsRepository.findBySach_MaSach(sach.getMaSach()).stream()
-            .map(IMGS::getImg).collect(Collectors.toList()));
-        return dto;
-    }
+        dto.setGia(sach.getGia());
+        dto.setSoLuong(sach.getSoLuong());
 
-    private void validateSachDTO(SachDTO sachDTO) {
-        if (sachDTO.getTenNXB() == null || sachDTO.getTenNXB().isEmpty()) {
-            throw new IllegalArgumentException("Tên nhà xuất bản không được để trống");
+        List<String> hinhAnh = imgRepository.findByMaSach(sach.getMaSach())
+                .stream()
+                .map(IMGS::getImg)
+                .collect(Collectors.toList());
+
+        if (hinhAnh.isEmpty()) {
+            String author = sach.getTacGias().isEmpty() ? "" : sach.getTacGias().get(0).getTenTG();
+    String imageUrl = googleBooksService.getBookCoverUrl(sach.getTenSach(), author);
+    if (imageUrl != null) {
+        hinhAnh = new ArrayList<>(); // Đảm bảo có thể ghi thêm
+        hinhAnh.add(imageUrl);
+
+        IMGS img = new IMGS();
+        img.setMaSach(sach.getMaSach());
+        img.setImg(imageUrl);
+        imgRepository.save(img);
+            }
         }
-        if (sachDTO.getTenTheLoais() == null || sachDTO.getTenTheLoais().isEmpty()) {
-            throw new IllegalArgumentException("Phải có ít nhất một thể loại");
-        }
-        if (sachDTO.getTenTacGias() == null || sachDTO.getTenTacGias().isEmpty()) {
-            throw new IllegalArgumentException("Phải có ít nhất một tác giả");
-        }
+
+        dto.setHinhAnh(hinhAnh);
+        return dto;
     }
 }

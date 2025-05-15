@@ -1,6 +1,11 @@
 package com.library.demo.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "IMGS")
@@ -10,21 +15,19 @@ public class IMGS {
     @Column(name = "MAIMG")
     private int maImg;
 
-    @Column(name = "IMG", nullable = false)
+    @Column(name = "MASACH")
+    private int maSach;
+
+    @Column(name = "IMG")
     private String img;
 
-    @ManyToOne
-    @JoinColumn(name = "MASACH")
-    private Sach sach;
-
-    public IMGS() {}
-
+    // Getters và setters
     public int getMaImg() { return maImg; }
     public void setMaImg(int maImg) { this.maImg = maImg; }
 
+    public int getMaSach() { return maSach; }
+    public void setMaSach(int maSach) { this.maSach = maSach; }
+
     public String getImg() { return img; }
     public void setImg(String img) { this.img = img; }
-
-    public Sach getSach() { return sach; }
-    public void setSach(Sach sach) { this.sach = sach; }
 }

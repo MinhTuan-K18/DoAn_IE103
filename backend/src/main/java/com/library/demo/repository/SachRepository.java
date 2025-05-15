@@ -1,46 +1,22 @@
 package com.library.demo.repository;
 
-import com.library.demo.model.Sach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.query.Procedure;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import com.library.demo.model.Sach;
 
 public interface SachRepository extends JpaRepository<Sach, Integer> {
-    @Procedure(name = "sp_ThemSach")
-    void themSach(
-        @Param("p_TenSach") String tenSach,
-        @Param("p_Gia") Integer gia,
-        @Param("p_MaNXB") Integer maNXB,
-        @Param("p_NamXB") Integer namXB,
-        @Param("p_TaiBan") Integer taiBan,
-        @Param("p_NgonNgu") String ngonNgu,
-        @Param("p_SoLuong") Integer soLuong,
-        @Param("p_ChuThich") String chuThich,
-        @Param("p_TinhTrang") String tinhTrang
-    );
-
-    @Procedure(name = "sp_CapNhatSach")
-    void capNhatSach(
-        @Param("p_MaSach") Integer maSach,
-        @Param("p_TenSach") String tenSach,
-        @Param("p_Gia") Integer gia,
-        @Param("p_MaNXB") Integer maNXB,
-        @Param("p_NamXB") Integer namXB,
-        @Param("p_TaiBan") Integer taiBan,
-        @Param("p_NgonNgu") String ngonNgu,
-        @Param("p_SoLuong") Integer soLuong,
-        @Param("p_ChuThich") String chuThich,
-        @Param("p_TinhTrang") String tinhTrang
-    );
-
-    @Procedure(name = "sp_TimKiemSach")
-    List<Sach> timKiemSach(
-        @Param("p_TenSach") String tenSach,
-        @Param("p_MaNXB") Integer maNXB,
-        @Param("p_NamXB") Integer namXB,
-        @Param("p_NgonNgu") String ngonNgu,
-        @Param("p_TinhTrang") String tinhTrang
-    );
+    @Query("SELECT s FROM Sach s " +
+           "JOIN s.theLoais tl " +
+           "JOIN s.tacGias tg " +
+           "JOIN s.nxb nxb " +  
+           "WHERE (:keyword IS NULL OR " +
+           "LOWER(s.tenSach) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(tl.tenTheLoai) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(tg.tenTG) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(nxb.tenNXB) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Sach> searchBooks(@Param("keyword") String keyword, Pageable pageable);
 }

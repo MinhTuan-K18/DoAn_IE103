@@ -1,9 +1,15 @@
 package com.library.demo.model;
 
-import jakarta.persistence.*;
-import lombok.Data;
-
 import java.util.List;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import lombok.Data;
 
 @Entity
 @Table(name = "THELOAI")
@@ -14,13 +20,21 @@ public class TheLoai {
     @Column(name = "MATL")
     private Integer maTL;
 
-    @Column(name = "TENTHELOAI", nullable = false)
+    @Column(name = "TENTHELOAI")
     private String tenTheLoai;
 
     @ManyToMany(mappedBy = "theLoais")
     private List<Sach> sachs;
 
-    public TheLoai() {}
+    public TheLoai() {
+    }
+    public TheLoai(String tenTheLoai) {
+        this.tenTheLoai = tenTheLoai;
+    }
+    public TheLoai(Integer maTL, String tenTheLoai) {
+        this.maTL = maTL;
+        this.tenTheLoai = tenTheLoai;
+    }
     public Integer getMaTL() {
         return maTL;
     }
@@ -33,5 +47,11 @@ public class TheLoai {
     public void setTenTheLoai(String tenTheLoai) {
         this.tenTheLoai = tenTheLoai;
     }
-   
+    public List<Sach> getSachs() {
+        return sachs;
+    }
+    public void setSachs(List<Sach> sachs) {
+        this.sachs = sachs;
+    }
+
 }
