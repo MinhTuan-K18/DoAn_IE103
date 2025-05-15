@@ -297,24 +297,24 @@ const Header = () => {
 
   const user = JSON.parse(localStorage.getItem("persist:root")); // lấy thông tin người dùng từ localStorage
 
-  const fetchCart = async () => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/cart/${user.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        const booksInCart = data.data || [];
-        setCartCount(booksInCart.length);
-      } else {
-        console.error("Lỗi khi lấy giỏ hàng");
-      }
-    } catch (error) {
-      console.error("Có lỗi xảy ra:", error);
-    }
-  };
+  // const fetchCart = async () => {
+  //   try {
+  //     const response = await fetch(`http://localhost:8080/api/cart/${user.id}`);
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       const booksInCart = data.data || [];
+  //       setCartCount(booksInCart.length);
+  //     } else {
+  //       console.error("Lỗi khi lấy giỏ hàng");
+  //     }
+  //   } catch (error) {
+  //     console.error("Có lỗi xảy ra:", error);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchCart();
-  }, [user.id]);
+  // useEffect(() => {
+  //   fetchCart();
+  // }, [user.id]);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");

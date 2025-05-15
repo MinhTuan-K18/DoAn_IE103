@@ -134,133 +134,99 @@ const Page = () => {
   });
 
   // Handle registration
-  const onSubmitRegister = async (data) => {
-    const { type, value } = determineInputType(data.identifier);
-
+  const onSubmitRegister = async () => {
+    setLoading(true);
     try {
-      const payload = {
-        username: data.tenND,
-        [type]: value,
-        password: data.matKhau,
-        birthdate: data.ngaySinh.toISOString().split("T")[0], // Định dạng YYYY-MM-DD
-        gender: data.gioiTinh,
-      };
-
-      const response = await fetch("http://localhost:8080/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (response.status === 200) {
-        toast.success(result.message || "Đăng ký thành công", {
-          style: { background: "#d1fae5", color: "#065f46" },
-        });
-        if (type === "email") {
-          setOtpEmail(value);
-          setShowOTP(true);
-        } else {
-          router.push("/");
-        }
-      } else {
-        throw new Error(result.message || "Đăng ký thất bại");
-      }
+      toast.success("Đăng nhập thành công");
+      router.push("/dashboard");
     } catch (error) {
-      toast.error(error.message || "Đã xảy ra lỗi, vui lòng thử lại", {
-        style: { background: "#fee2e2", color: "#b91c1c" },
-      });
+      toast.error("Đăng ký thất bại. Kiểm tra lại email và mật khẩu");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle OTP verification
-  const onSubmitOTP = async (data) => {
-    try {
-      const verifyResponse = await fetch(
-        "http://localhost:8080/api/register/verify-otp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: otpEmail,
-            otp: data.otp,
-          }),
-        }
-      );
+  //   // try {
+  //   //   const payload = {
+  //   //     username: data.tenND,
+  //   //     [type]: value,
+  //   //     password: data.matKhau,
+  //   //     birthdate: data.ngaySinh.toISOString().split("T")[0], // Định dạng YYYY-MM-DD
+  //   //     gender: data.gioiTinh,
+  //   //   };
 
-      const verifyResult = await verifyResponse.json();
+  //   //     const response = await fetch("http://localhost:8080/api/register", {
+  //   //       method: "POST",
+  //   //       headers: {
+  //   //         "Content-Type": "application/json",
+  //   //       },
+  //   //       body: JSON.stringify(payload),
+  //   //     });
 
-      if (verifyResponse.status === 200) {
-        toast.success(verifyResult.message || "Xác thực OTP thành công", {
-          style: { background: "#d1fae5", color: "#065f46" },
-        });
-        setShowOTP(false);
-        router.push("/");
-      } else {
-        throw new Error(verifyResult.message || "Xác thực OTP thất bại");
-      }
-    } catch (error) {
-      toast.error(error.message || "Đã xảy ra lỗi, vui lòng thử lại", {
-        style: { background: "#fee2e2", color: "#b91c1c" },
-      });
-    }
-  };
+  //   //     const result = await response.json();
+
+  //   //     if (response.status === 200) {
+
+  //   //       });
+  //   //       if (type === "email") {
+  //   //         setOtpEmail(value);
+  //   //         setShowOTP(true);
+  //   //       } else {
+  //   //         router.push("/");
+  //   //       }
+  //   //     } else {
+  //   //       throw new Error(result.message || "Đăng ký thất bại");
+  //   //     }
+  //   //   } catch (error) {
+  //   //     toast.error(error.message || "Đã xảy ra lỗi, vui lòng thử lại", {
+  //   //       style: { background: "#fee2e2", color: "#b91c1c" },
+  //   //     });
+  //   //   }
+  //   // };
+
+  //   // // Handle OTP verification
+  //   // const onSubmitOTP = async (data) => {
+  //   //   try {
+  //   //     const verifyResponse = await fetch(
+  //   //       "http://localhost:8080/api/register/verify-otp",
+  //   //       {
+  //   //         method: "POST",
+  //   //         headers: {
+  //   //           "Content-Type": "application/json",
+  //   //         },
+  //   //         body: JSON.stringify({
+  //   //           email: otpEmail,
+  //   //           otp: data.otp,
+  //   //         }),
+  //   //       }
+  //   //     );
+
+  //   //     const verifyResult = await verifyResponse.json();
+
+  //   //     if (verifyResponse.status === 200) {
+  //   //       toast.success(verifyResult.message || "Xác thực OTP thành công", {
+  //   //         style: { background: "#d1fae5", color: "#065f46" },
+  //   //       });
+  //   //       setShowOTP(false);
+  //   //       router.push("/");
+  //   //     } else {
+  //   //       throw new Error(verifyResult.message || "Xác thực OTP thất bại");
+  //   //     }
+  //   //   } catch (error) {
+  //   //     toast.error(error.message || "Đã xảy ra lỗi, vui lòng thử lại", {
+  //   //       style: { background: "#fee2e2", color: "#b91c1c" },
+  //   //     });
+  //   //   }
+  //   // };
 
   // Handle login
-  const onSubmitLogin = async (data) => {
-    const { type, value } = determineInputType(data.identifier);
-
+  const onSubmitLogin = async () => {
+  
     try {
-      const payload = {
-        [type]: value,
-        password: data.matKhau,
-      };
-
-      const response = await fetch("http://localhost:8080/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (response.status === 200) {
-        localStorage.setItem("accessToken", result.data.accessToken);
-        localStorage.setItem("id", result.data.user.id || "");
-        localStorage.setItem("username", result.data.user.username || "");
-
-        Cookies.set("refreshToken", result.data.refreshToken, {
-          expires: 7,
-          sameSite: "Strict",
-        });
-
-        dispatch(
-          updateUser({
-            ...result.data.user,
-            access_token: result.data.accessToken,
-            refreshToken: result.data.refreshToken,
-          })
-        );
-
-        toast.success(result.message || "Đăng nhập thành công", {
-          style: { background: "#d1fae5", color: "#065f46" },
-        });
-        router.push("/");
-      } else {
-        throw new Error(result.message || "Đăng nhập thất bại");
-      }
+      toast.success("Đăng nhập thành công");
+      router.push("/");
     } catch (error) {
-      toast.error(error.message || "Đã xảy ra lỗi, vui lòng thử lại", {
-        style: { background: "#fee2e2", color: "#b91c1c" },
-      });
-      router.push("/user-login");
+      toast.error("Đăng ký thất bại. Kiểm tra lại email và mật khẩu");
     }
   };
 
@@ -331,7 +297,11 @@ const Page = () => {
                           className="flex items-center text-gray-600 text-sm"
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          {showPassword ? <EyeOff className="w-5 h-5 ml-1" /> : <Eye className="w-5 h-5 ml-1" />}
+                          {showPassword ? (
+                            <EyeOff className="w-5 h-5 ml-1" />
+                          ) : (
+                            <Eye className="w-5 h-5 ml-1" />
+                          )}
                           {showPassword ? "Ẩn" : "Hiện"}
                         </button>
                       </div>
@@ -360,10 +330,10 @@ const Page = () => {
                       <LogIn className="mr-2 w-4 h-4" /> Đăng nhập
                     </Button>
                   </div>
-                  <div className="mt-4">
+                  {/* <div className="mt-4">
                     <GoogleLoginButton />
                     <FacebookLoginButton className="mt-2 w-full" />
-                  </div>
+                  </div> */}
                 </TabsContent>
 
                 {/* Register Tab */}
@@ -495,7 +465,9 @@ const Page = () => {
                     placeholder="Nhập mã OTP 6 chữ số"
                     className="col-span-3 dark:border-gray-400 border-[#0E42D2] placeholder:text-gray-400"
                   />
-                  {errorsOTP.otp && <p className="text-red-500">{errorsOTP.otp.message}</p>}
+                  {errorsOTP.otp && (
+                    <p className="text-red-500">{errorsOTP.otp.message}</p>
+                  )}
                 </div>
                 <Button
                   onClick={handleSubmitOTP(onSubmitOTP)}
