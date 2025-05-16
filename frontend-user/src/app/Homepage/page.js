@@ -167,7 +167,7 @@ const HomePage = () => {
                         </div>
                       </div>
                       <div className="p-4 flex flex-col flex-1">
-                        <h3 className="text-lg font-semibold h-12 overflow-hidden">
+                        <h3 className="text-lg font-semibold h-12 overflow-hidden truncate">
                           {book.title}
                         </h3>
                         <p className="text-sm text-gray-600 h-6 truncate">
