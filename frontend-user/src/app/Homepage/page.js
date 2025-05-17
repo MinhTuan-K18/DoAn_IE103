@@ -7,12 +7,19 @@ import ServiceHoursCard from "./ServiceHoursCard";
 import ChatBotButton from "../components/ChatBoxButton";
 import axios from "axios";
 import { CheckCircle, XCircle, AlertTriangle, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import toast, { Toaster } from "react-hot-toast";
 
 const HomePage = () => {
   const [books, setBooks] = useState([]);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [popUpOpen, setPopUpOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [actionType, setActionType] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     fetchBooks();
@@ -76,16 +83,44 @@ const HomePage = () => {
     if (page > 0) setPage((prev) => prev - 1);
   };
 
-  const handleBorrow = (bookId) => {
-    alert(`Mượn sách ID: ${bookId}`);
+  const handleBorrow = (book, e) => {
+    e.stopPropagation();
+    setSelectedBook(book);
+    setActionType("borrow");
+    setPopUpOpen(true);
   };
 
-  const handleBuy = (bookId) => {
-    alert(`Mua sách ID: ${bookId}`);
+  const handleBuy = (book, e) => {
+    e.stopPropagation();
+    setSelectedBook(book);
+    setActionType("buy");
+    setPopUpOpen(true);
+  };
+
+  const handleConfirmAction = () => {
+    if (actionType === "borrow") {
+      toast.success("Mượn sách thành công");
+    } else if (actionType === "buy") {
+      toast.success("Mua sách thành công");
+    }
+    setPopUpOpen(false);
+    setSelectedBook(null);
+    setActionType("");
+  };
+
+  const handleCancel = () => {
+    setPopUpOpen(false);
+    setSelectedBook(null);
+    setActionType("");
+  };
+
+  const handleBookClick = (bookId) => {
+    router.push(`/Homepage/details/${bookId}`);
   };
 
   return (
     <div className="flex flex-col min-h-screen text-foreground bg-gray-100">
+      <Toaster position="top-center" reverseOrder={false} />
       <main className="pt-16 flex">
         <LeftSideBar />
         <section className="flex-1 pr-5 md:pl-64 ml-5 mt-2">
@@ -130,7 +165,6 @@ const HomePage = () => {
           </form>
 
           <section className="mt-5 bg-white rounded-xl p-5">
-          
             {books.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-gray-500">
                 <img
@@ -149,7 +183,8 @@ const HomePage = () => {
                   {books.map((book) => (
                     <div
                       key={book.id}
-                      className="bg-white px-2 py-2 mb-8 shadow-md rounded-lg overflow-hidden flex flex-col border border-gray-200 hover:shadow-lg transition-shadow duration-300"
+                      className="bg-white px-2 py-2 mb-8 shadow-md rounded-lg overflow-hidden flex flex-col border border-gray-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+                      onClick={() => handleBookClick(book.id)}
                     >
                       <div className="relative h-64">
                         <img
@@ -180,9 +215,9 @@ const HomePage = () => {
                         <p className="text-sm text-gray-600 h-6">
                           Số lượng: {book.quantity}
                         </p>
-                        <div className="flex gap-2 mt-6">
+                        <div className="flex gap-2 mt-6" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleBorrow(book.id)}
+                            onClick={(e) => handleBorrow(book, e)}
                             disabled={book.status === "Hết sách"}
                             className={`flex-1 px-3 py-1 rounded text-white ${
                               book.status === "Hết sách"
@@ -193,7 +228,7 @@ const HomePage = () => {
                             Mượn sách
                           </button>
                           <button
-                            onClick={() => handleBuy(book.id)}
+                            onClick={(e) => handleBuy(book, e)}
                             disabled={book.status === "Hết sách" || book.quantity === 0}
                             className={`flex-1 px-3 py-1 rounded text-white ${
                               book.status === "Hết sách" || book.quantity === 0
@@ -233,6 +268,50 @@ const HomePage = () => {
         </section>
         <ChatBotButton />
       </main>
+      {popUpOpen && selectedBook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black opacity-80"></div>
+          <div className="bg-white p-6 rounded-lg shadow-lg z-10 w-120">
+            <h2 className="text-lg font-bold mb-4">
+              Xác nhận {actionType === "borrow" ? "Mượn" : "Mua"} sách
+            </h2>
+            <p>
+              Bạn có chắc chắn muốn {actionType === "borrow" ? "mượn" : "mua"} sách này không?
+            </p>
+            <div className="flex mt-4 gap-5">
+              <img
+                src={selectedBook.imageSrc || "https://via.placeholder.com/150"}
+                className="w-[145px] h-[205px] object-cover"
+                onError={(e) => (e.target.src = "https://via.placeholder.com/150")}
+              />
+              <div className="flex flex-col gap-2">
+                <p>Mã sách: {selectedBook.id}</p>
+                <p className="font-bold">{selectedBook.title}</p>
+                <p className="italic">{selectedBook.authors || "Không có tác giả"}</p>
+                <p>Số lượng: {selectedBook.quantity ?? 0}</p>
+              </div>
+            </div>
+            <div className="flex justify-end mt-4 gap-4">
+              <Button
+                onClick={handleCancel}
+                className="bg-red-500 hover:bg-red-700 text-white"
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={handleConfirmAction}
+                className={`${
+                  actionType === "borrow"
+                    ? "bg-blue-500 hover:bg-blue-700"
+                    : "bg-green-500 hover:bg-green-700"
+                } text-white`}
+              >
+                {actionType === "borrow" ? "Mượn" : "Mua"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
