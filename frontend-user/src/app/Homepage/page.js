@@ -130,9 +130,7 @@ const HomePage = () => {
           </form>
 
           <section className="mt-5 bg-white rounded-xl p-5">
-            <h2 className="inline-block px-4 py-2 text-white bg-[#062D76] rounded-lg">
-              Sách
-            </h2>
+          
             {books.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-gray-500">
                 <img
@@ -147,11 +145,11 @@ const HomePage = () => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-3 gap-6 mt-10 w-full">
+                <div className="grid grid-cols-3 gap-6 w-full">
                   {books.map((book) => (
                     <div
                       key={book.id}
-                      className="bg-white px-2 py-2 mb-4 shadow-md rounded-lg overflow-hidden flex flex-col border border-gray-200 hover:shadow-lg transition-shadow duration-300"
+                      className="bg-white px-2 py-2 mb-8 shadow-md rounded-lg overflow-hidden flex flex-col border border-gray-200 hover:shadow-lg transition-shadow duration-300"
                     >
                       <div className="relative h-64">
                         <img

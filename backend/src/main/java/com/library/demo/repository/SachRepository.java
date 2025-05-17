@@ -5,7 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.Modifying;
+
+
 
 import com.library.demo.model.Sach;
 
@@ -22,11 +23,6 @@ public interface SachRepository extends JpaRepository<Sach, Integer> {
            "LOWER(nxb.tenNXB) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Sach> searchBooks(@Param("keyword") String keyword, Pageable pageable);
     Sach findBymaSach(Integer maSach);
-//   @Modifying
-//     @Query("DELETE FROM TACGIA_SACH ts WHERE ts.MASACH = :maSach")
-//     void deleteTacGiaSachByMaSach(@Param("maSach") Integer maSach);
 
-//     @Modifying
-//     @Query("DELETE FROM THELOAI_SACH ts WHERE ts.MASACH = :maSach")
-//     void deleteTheLoaiSachByMaSach(@Param("maSach") Integer maSach);
+
 }

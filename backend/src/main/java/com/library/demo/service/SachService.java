@@ -10,17 +10,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.library.demo.DTO.SachDTO;
-import com.library.demo.model.IMGS;
-import com.library.demo.model.NXB;
-import com.library.demo.model.Sach;
-import com.library.demo.model.TacGia;
-import com.library.demo.model.TheLoai;
-import com.library.demo.repository.ImgRepository;
-import com.library.demo.repository.NXBRepository;
-import com.library.demo.repository.SachRepository;
-import com.library.demo.repository.TheLoaiRepository;
-import com.library.demo.repository.tacGiaRepository;
+import com.library.demo.model.*;
+
+
+import com.library.demo.repository.*;
 import com.library.demo.utils.VietnameseNormalizer;
+
+
 
 @Service
 public class SachService {
@@ -42,6 +38,11 @@ public class SachService {
 
     @Autowired
     private NXBRepository nxbRepository;
+    @Autowired
+    private TacGiaSachRepository tacGiaSachRepository;
+
+    @Autowired
+    private TheLoaiSachRepository theLoaiSachRepository;
 
     public Page<SachDTO> searchBooks(String keyword, Pageable pageable) {
         String normalizedKeyword = VietnameseNormalizer.removeVietnameseAccents(keyword);
@@ -92,9 +93,13 @@ public class SachService {
             throw new IllegalArgumentException("Sách không tồn tại với mã: " + maSach);
         }
         try {
-            // sachRepository.deleteTacGiaSachByMaSach(maSach);
-            // sachRepository.deleteTheLoaiSachByMaSach(maSach);
+            System.out.println("Xóa tác giả với mã: " + maSach);
+            tacGiaSachRepository.deleteById(maSach);
+            System.out.println("Xóa thể loại với mã: " + maSach);
+            theLoaiSachRepository.deleteById(maSach);
+            System.out.println("Xóa hình ảnh với mã: " + maSach);
             imgRepository.deleteById(maSach);
+            System.out.println("Xóa sách với mã: " + maSach);
             sachRepository.deleteById(maSach);
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi xóa sách: " + e.getMessage());
