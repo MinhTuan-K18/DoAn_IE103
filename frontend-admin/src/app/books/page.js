@@ -12,7 +12,6 @@ import { ThreeDot } from "react-loading-indicators";
 
 const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [mode, setMode] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [bookList, setBookList] = useState([]);
   const [popUpOpen, setPopUpOpen] = useState(false);
@@ -22,56 +21,50 @@ const Page = () => {
   const [totalPages, setTotalPages] = useState(1);
   const router = useRouter();
 
-  const fetchBook = async (pageNum = 0) => {
+  const fetchBooks = async (pageNum = 0, keyword = "", status = "all") => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/api/books", {
-        params: { page: pageNum, size: 12 },
-      });
-      setBookList(res.data.content || []);
-      setTotalPages(res.data.totalPages || 1);
+      let endpoint = `http://localhost:8080/api/books?page=${pageNum}&size=10`;
+      if (keyword || status !== "all") {
+        endpoint = `http://localhost:8080/api/books/search?page=${pageNum}&size=10`;
+        if (keyword) endpoint += `&keyword=${encodeURIComponent(keyword)}`;
+        if (status !== "all") endpoint += `&tinhTrang=${encodeURIComponent(status)}`;
+      }
+      console.log("Fetching from:", endpoint);
+      const { data } = await axios.get(endpoint);
+      console.log("API Response:", data);
+      setBookList(data.content || []);
+      setTotalPages(data.totalPages || 1);
       setPage(pageNum);
+      if (data.content?.length === 0) {
+        toast.error("Không có sách nào phù hợp.");
+      }
     } catch (error) {
       toast.error("Lỗi khi lấy dữ liệu sách");
-      console.error(error);
+      console.error("Fetch error:", error.response || error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBook();
-  }, []);
+    fetchBooks(page, searchQuery, statusFilter);
+  }, [page, statusFilter]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const params = { page: 0, size: 12 };
-      if (mode === "tenSach") params.tenSach = searchQuery;
-      else if (mode === "maNXB") params.maNXB = Number(searchQuery) || null;
-      else if (mode === "namXB") {
-        if (/^\d{4}$/.test(searchQuery.trim())) params.namXB = Number(searchQuery.trim());
-        else {
-          toast.error("Nhập năm theo dạng YYYY");
-          setLoading(false);
-          return;
-        }
-      } else if (mode === "ngonNgu") params.ngonNgu = searchQuery;
-      else if (mode === "tinhTrang") params.tinhTrang = searchQuery;
+  const handleSearch = () => {
+    console.log("Searching with query:", searchQuery, "and status:", statusFilter);
+    setPage(0);
+    fetchBooks(0, searchQuery, statusFilter);
+  };
 
-      if (statusFilter !== "all") params.tinhTrang = statusFilter;
+  const handleInputChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
-      const { data } = await axios.get("http://localhost:8080/api/books/search", { params });
-      setBookList(data.content || []);
-      setTotalPages(data.totalPages || 1);
-      setPage(0);
-      if (data.content.length === 0) toast.error("Không tìm thấy kết quả");
-    } catch (err) {
-      console.error("Lỗi khi tìm kiếm:", err);
-      toast.error("Có lỗi xảy ra khi tìm kiếm");
-    } finally {
-      setLoading(false);
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSearch();
     }
   };
 
@@ -80,11 +73,11 @@ const Page = () => {
     try {
       await axios.delete(`http://localhost:8080/api/books/${book.maSach}`);
       toast.success("Xóa sách thành công");
-      await fetchBook(page);
+      await fetchBooks(page, searchQuery, statusFilter);
     } catch (error) {
       console.error("Lỗi khi xóa:", error.response || error);
       if (error.response?.status === 400) {
-        toast.error("Không thể xóa sách vì đang được mượn");
+        toast.error(error.response.data.error || "Không thể xóa sách vì đang được mượn");
       } else {
         toast.error("Xóa sách thất bại");
       }
@@ -97,7 +90,7 @@ const Page = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 0 && newPage < totalPages) {
-      fetchBook(newPage);
+      setPage(newPage);
     }
   };
 
@@ -123,16 +116,16 @@ const Page = () => {
           src={
             book.hinhAnh?.[0]
               ? `http://localhost:8080/api/books/image-proxy?url=${encodeURIComponent(book.hinhAnh[0])}`
-              : "/placeholder.png"
+              : "https://drahmed.org/wp-content/uploads/2020/09/dentalia-placeholder-img-4-750x500.jpg"
           }
           className="w-[145px] h-[205px] object-cover"
-          onError={(e) => (e.target.src = "/placeholder.png")}
+          onError={(e) => (e.target.src = "https://drahmed.org/wp-content/uploads/2020/09/dentalia-placeholder-img-4-750x500.jpg")}
         />
         <div className="flex flex-col gap-2 w-full">
           <p className="font-bold">{book.tenSach || "Không có tiêu đề"}</p>
           <p className="italic">{book.tenTacGias?.join(", ") || "Không có tác giả"}</p>
-          <p>Ngôn ngữ: {book.ngonNgu || "Không xác định"}</p>
-          <p>Tái bản: {book.taiBan || "Không xác định"}</p>
+          <p>Nhà xuất bản: {book.tenNXB || "Không xác định"}</p>
+          <p>Thể loại: {book.tenTheLoais?.join(", ") || "Không xác định"}</p>
           <p>Số lượng: {book.soLuong ?? 0}</p>
           <p className="font-semibold">
             Trạng thái: <span className={tinhTrangInfo.color}>{tinhTrangInfo.text}</span>
@@ -187,35 +180,15 @@ const Page = () => {
         <div className="flex w-full flex-col py-6 md:ml-52 gap-2 items-center px-10 mt-5">
           <div className="flex w-full items-center justify-between mb-10">
             <div className="flex gap-2 p-2 rounded-md w-full max-w-5xl items-center">
-              <select
-                onChange={(e) => setMode(e.target.value)}
-                value={mode}
-                className="border border-gray-300 bg-gray rounded-md shadow p-2 font-thin italic"
-              >
-                <option value="all">Tất cả</option>
-                <option value="tenSach">Tên sách</option>
-                <option value="maNXB">Nhà xuất bản</option>
-                <option value="namXB">Năm xuất bản</option>
-                <option value="ngonNgu">Ngôn ngữ</option>
-                <option value="tinhTrang">Tình trạng</option>
-              </select>
               <Input
                 type="text"
-                placeholder="Tìm kiếm..."
+                placeholder="Tìm kiếm theo tên sách, tác giả..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
                 className="flex-1 h-10 p-3 text-black bg-white shadow font-thin italic"
               />
-              <select
-                onChange={(e) => setStatusFilter(e.target.value)}
-                value={statusFilter}
-                className="border border-gray-300 bg-white rounded-md shadow p-2 italic"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="Đầy đủ sách">Đầy đủ sách</option>
-                <option value="Thiếu sách">Thiếu sách</option>
-                <option value="Hết sách">Hết sách</option>
-              </select>
+              
               <Button
                 onClick={handleSearch}
                 className="w-10 h-10 bg-[#062D76] hover:bg-gray-700 shadow rounded-md"
@@ -224,12 +197,7 @@ const Page = () => {
               </Button>
             </div>
             <div className="flex gap-4 ml-5">
-              <Button
-                onClick={() => router.push("/books/categories")}
-                className="w-40 h-10 bg-[#062D76] hover:bg-gray-700 font-bold rounded-[10px]"
-              >
-                Quản lý thể loại
-              </Button>
+            
               <Button
                 onClick={() => router.push("/books/addBook")}
                 className="w-40 h-10 bg-[#062D76] hover:bg-gray-700 font-bold rounded-[10px]"
@@ -283,10 +251,10 @@ const Page = () => {
                     ? `http://localhost:8080/api/books/image-proxy?url=${encodeURIComponent(
                         deleteOne.hinhAnh[0]
                       )}`
-                    : "/placeholder.png"
+                    : "/https://drahmed.org/wp-content/uploads/2020/09/dentalia-placeholder-img-4-750x500.jpg"
                 }
                 className="w-[145px] h-[205px] object-cover"
-                onError={(e) => (e.target.src = "/placeholder.png")}
+                onError={(e) => (e.target.src = "https://drahmed.org/wp-content/uploads/2020/09/dentalia-placeholder-img-4-750x500.jpg")}
               />
               <div className="flex flex-col gap-2">
                 <p>Mã sách: {deleteOne.maSach}</p>

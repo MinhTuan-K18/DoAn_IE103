@@ -11,4 +11,5 @@ import com.library.demo.model.IMGS;
 public interface ImgRepository extends JpaRepository<IMGS, Integer> {
     @Query("SELECT i FROM IMGS i WHERE i.maSach = :maSach")
     List<IMGS> findByMaSach(@Param("maSach") int maSach);
+    IMGS deleteById(int maSach);
 }

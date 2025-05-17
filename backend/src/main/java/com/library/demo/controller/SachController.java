@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,14 +18,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.library.demo.DTO.SachDTO;
 import com.library.demo.service.SachService;
-
 
 @RestController
 @RequestMapping("/api/books")
@@ -48,17 +57,85 @@ public class SachController {
         Page<SachDTO> books = sachService.getAllBooks(pageable);
         return ResponseEntity.ok(books);
     }
-    // SachController.java
+
+    @PostMapping
+    public ResponseEntity<?> addBook(@RequestBody SachDTO sachDTO) {
+        try {
+            SachDTO savedBook = sachService.saveBook(sachDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedBook);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SachDTO> getBookById(@PathVariable Integer id) {
+        SachDTO sachDTO = sachService.getSachById(id);
+        if (sachDTO != null) {
+            return ResponseEntity.ok(sachDTO);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateBook(@PathVariable Integer id, @RequestBody SachDTO sachDTO) {
+        try {
+            SachDTO updatedBook = sachService.updateBook(id, sachDTO);
+            return ResponseEntity.ok(updatedBook);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteBook(@PathVariable Integer id) {
+        try {
+            sachService.deleteBook(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/upload-image")
+    public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Tệp ảnh không được để trống"));
+            }
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Path uploadPath = Paths.get("Uploads");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            Path filePath = uploadPath.resolve(fileName);
+            Files.write(filePath, file.getBytes());
+            String imageUrl = "http://localhost:8080/Uploads/" + fileName;
+
+            return ResponseEntity.ok(Map.of("url", imageUrl));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Không thể tải ảnh: " + e.getMessage()));
+        }
+    }
+
     @GetMapping("/image-proxy")
     public ResponseEntity<byte[]> proxyImage(@RequestParam String url) {
         try {
-            System.out.println("Proxying image from: " + url);
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0"); // Thêm User-Agent để tránh bị chặn
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
             int responseCode = connection.getResponseCode();
-            System.out.println("Response code from image URL: " + responseCode);
-
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 InputStream inputStream = connection.getInputStream();
                 byte[] imageBytes = inputStream.readAllBytes();
@@ -66,14 +143,10 @@ public class SachController {
                 headers.setContentType(MediaType.IMAGE_JPEG);
                 return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
             } else {
-                System.err.println("Failed to fetch image, response code: " + responseCode);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(null);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
         } catch (IOException e) {
-            System.err.println("Error proxying image: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }

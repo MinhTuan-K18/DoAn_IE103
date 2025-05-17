@@ -29,18 +29,27 @@ public class Sach {
     @Column(name = "GIA")
     private Integer gia;
 
-    @Column(name = "NAMXB")
+    @Column(name = "namxb")
     private Integer namXB;
 
     @Column(name = "SOLUONG")
     private Integer soLuong;
 
+    @Column(name = "TAIBAN")
+    private Integer taiBan;
+
     @Column(name = "TINHTRANG")
     private String tinhTrang;
+
+    @Column(name = "CHUTHICH")
+    private String chuThich;
+
 
     @ManyToOne
     @JoinColumn(name = "MANXB")
     private NXB nxb;
+
+
 
     @ManyToMany
     @JoinTable(
@@ -113,6 +122,18 @@ public class Sach {
     }
     public void setNxb(NXB nxb) {
         this.nxb = nxb;
+    }
+    public String getChuThich() {
+        return chuThich;
+    }
+    public void setChuThich(String chuThich) {
+        this.chuThich = chuThich;
+    }
+    public Integer getTaiBan() {
+        return taiBan;
+    }
+    public void setTaiBan(Integer taiBan) {
+        this.taiBan = taiBan;
     }
     public List<TheLoai> getTheLoais() {
         return theLoais;
