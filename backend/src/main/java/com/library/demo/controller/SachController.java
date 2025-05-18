@@ -34,7 +34,7 @@ import com.library.demo.service.SachService;
 
 @RestController
 @RequestMapping("/api/books")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class SachController {
     @Autowired
     private SachService sachService;

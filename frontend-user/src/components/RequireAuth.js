@@ -10,18 +10,18 @@ const RequireAuth = ({ children }) => {
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
 
-  const publicRoutes = ["/user-login"]; // thêm các route không cần login
+  const publicRoutes = ["/user-login", "/Homepage", "/Homepage/details"]; // thêm các route không cần login
 
   // Kiểm tra token khi có sự thay đổi pathname
   useEffect(() => {
     const token = localStorage.getItem("accessToken"); // Lấy token từ localStorage
     console.log("TOKEN:", token);
 
-    if (!token && !publicRoutes.includes(pathname)) {
-      router.push("/user-login");
-    } else {
+    // if (!token && !publicRoutes.includes(pathname)) {
+    //   router.push("/user-login");
+    // } else {
       setIsLoading(false);
-    }
+    //}
   }, [pathname, router]);
 
   if (isLoading) return null; // Hoặc loading spinner

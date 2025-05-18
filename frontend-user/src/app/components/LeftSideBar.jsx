@@ -2,8 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import useSidebarStore from "@/store/sidebarStore.js";
-import { Bell, BookText, CircleAlert, LockKeyhole, User, ClipboardList } from "lucide-react";
-
+import { Bell, BookText, CircleAlert, LockKeyhole, User, ClipboardList, X } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import React from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -21,13 +20,12 @@ const LeftSideBar = () => {
     }
   };
 
-  const getButtonClass = (path) => {
-    return pathname.includes(path)
-      ? "bg-[#062D76] text-white hover:bg-[#062D76] hover:text-white" 
-      : "active:bg-[#062D76] active:text-white"; // 
-  };
+  const getButtonClass = (path) =>
+    pathname.includes(path)
+      ? "bg-[#6CB1DA] text-white"
+      : "text-gray-700 hover:bg-[#6CB1DA] hover:text-white";
 
-  const handlelogout = async () => {
+  const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Logout error:", error.message);
@@ -42,94 +40,65 @@ const LeftSideBar = () => {
     }
   };
 
+  const navItems = [
+    { path: "/user-profile", label: "Hồ sơ cá nhân", icon: User },
+    { path: "/borrowed-books", label: "Sách đang mượn", icon: BookText },
+    { path: "/overdue-books", label: "Sách quá hạn", icon: CircleAlert },
+    { path: "/borrowed-card", label: "Phiếu mượn", icon: ClipboardList },
+    { path: "/change-password", label: "Đổi mật khẩu", icon: LockKeyhole },
+    { path: "/notification", label: "Thông báo", icon: Bell },
+  ];
+
   return (
     <aside
-      className={`fixed top-16 left-0 h-[calc(100%-4rem)] w-48 pt-2 transform transition-transform duration-200 ease-in-out md:translate-x-0 flex flex-col z-50 md:z-0 ${
-        isSidebarOpen ? "translate-x-0 bg-white shadow-lg" : "-translate-x-full"
-      } ${isSidebarOpen ? "md:hidden" : ""} md:bg-transparent md:shadow-none`}
+      className={`fixed top-16 left-0 h-[calc(100%-4rem)] w-60 bg-white shadow-lg pt-4 transform transition-transform duration-300 ease-in-out z-50 md:z-0 md:translate-x-0 ${
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      } md:shadow-none`}
     >
-      <div className="flex bg-white flex-col rounded-lg h-full overflow-y-auto">
-        <nav className="space-y-4 flex-grow">
+      <div className="flex flex-col h-full">
+        {/* Nút đóng sidebar trên mobile */}
+        {isSidebarOpen && (
           <Button
             variant="ghost"
-            className={`w-full justify-start mt-5 transition-colors ${
-              pathname === "/user-profile"
-                ? "bg-[#6CB1DA] text-white"
-                : "hover:bg-[#6CB1DA] hover:text-white"
-            }`}
-            onClick={() => handleNavigation("/user-profile")}
+            className="self-end mr-4 md:hidden"
+            onClick={toggleSidebar}
           >
-            <User className="mr-4" /> Hồ sơ cá nhân
+            <X className="h-6 w-6" />
           </Button>
+        )}
 
-          <Button
-            variant="ghost"
-            className={`w-full justify-start transition-colors ${
-              pathname === "/borrowed-books"
-                ? "bg-[#6CB1DA] text-white"
-                : "hover:bg-[#6CB1DA] hover:text-white"
-            }`}
-            onClick={() => handleNavigation("/borrowed-books")}
-          >
-            <BookText className="mr-4" /> Sách đang mượn
-          </Button>
-
-          <Button
-            variant="ghost"
-            className={`w-full justify-start transition-colors ${
-              pathname === "/overdue-books"
-                ? "bg-[#6CB1DA] text-white"
-                : "hover:bg-[#6CB1DA] hover:text-white"
-            }`}
-            onClick={() => handleNavigation("/overdue-books")}
-          >
-            <CircleAlert className="mr-4" /> Sách quá hạn
-          </Button>
-
-          <Button
-            variant="ghost"
-            className={`flex justify-start py-5 items-center cursor-pointer w-full text-[1.125rem] font-normal ${getButtonClass("/borrowed-card")}`}
-            onClick={() => handleNavigation("/borrowed-card")}
-          >
-            <ClipboardList style={{ width: "1.5rem", height: "1.5rem", strokeWidth: "1.5px" }} className="mr-2" /> Phiếu mượn
-          </Button>
-
-          <Button
-            variant="ghost"
-            className={`w-full justify-start transition-colors ${
-              pathname === "/change-password"
-                ? "bg-[#6CB1DA] text-white"
-                : "hover:bg-[#6CB1DA] hover:text-white"
-            }`}
-            onClick={() => handleNavigation("/change-password")}
-          >
-            <LockKeyhole className="mr-4" /> Đổi mật khẩu
-          </Button>
-
-          <Button
-            variant="ghost"
-            className={`w-full justify-start transition-colors ${
-              pathname === "/notification"
-                ? "bg-[#6CB1DA] text-white"
-                : "hover:bg-[#6CB1DA] hover:text-white"
-            }`}
-            onClick={() => handleNavigation("/notification")}
-          >
-            <Bell className="mr-4" /> Thông báo
-          </Button>
+        <nav className="flex flex-col space-y-2 flex-grow px-3">
+          {navItems.map(({ path, label, icon: Icon }) => (
+            <Button
+              key={path}
+              variant="ghost"
+              className={`w-full justify-start py-3 text-base font-medium transition-colors group ${getButtonClass(
+                path
+              )}`}
+              onClick={() => handleNavigation(path)}
+            >
+              <Icon
+                className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform"
+                strokeWidth={1.75}
+              />
+              {label}
+            </Button>
+          ))}
         </nav>
 
-        <div className="mb-4">
+        <div className="px-3 pb-4">
           <Separator className="my-3" />
-          <div className="text-xs text-muted-foreground">
-            <Button
-              variant="ghost"
-              className="ml-12 p-4 bg-[#EFF7F7] font-bold rounded-lg text-black hover:bg-[#6CB1DA] hover:text-white transition-colors"
-              onClick={handlelogout}
-            >
-              Đăng xuất
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            className="w-full justify-start py-3 text-base font-medium text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+            onClick={handleLogout}
+          >
+            <LockKeyhole
+              className="mr-3 h-5 w-5"
+              strokeWidth={1.75}
+            />
+            Đăng xuất
+          </Button>
         </div>
       </div>
     </aside>
